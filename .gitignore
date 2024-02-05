@@ -1,0 +1,4 @@
+# Exclude the content of these directories
+VideoOutput/*
+VideoInput/*.mp4
+Yolov3/yolov3.weights

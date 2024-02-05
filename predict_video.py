@@ -14,7 +14,6 @@ import time
 from sktime.datatypes._panel._convert import from_2d_array_to_nested
 from court_detector import CourtDetector
 from Models.tracknet import trackNet
-from TrackPlayers.trackplayers import *
 from utils import get_video_properties, get_dtype
 from detection import *
 from pickle import load

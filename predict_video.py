@@ -37,33 +37,20 @@ bounce = args.bounce
 
 n_classes = 256
 save_weights_path = 'WeightsTracknet/model.1'
-yolo_classes = 'Yolov3/yolov3.txt'
-yolo_weights = 'Yolov3/yolov3.weights'
-yolo_config = 'Yolov3/yolov3.cfg'
 
 if output_video_path == "":
     # output video in same path
-    output_video_path = input_video_path.split('.')[0] + "VideoOutput/video_output.mp4"
+    output_video_path = "VideoOutput/" + input_video_path.split('.')[0] + "_video_output.mp4"
 
-# get video fps&video size
+# get videos properties
 video = cv2.VideoCapture(input_video_path)
-fps = int(video.get(cv2.CAP_PROP_FPS))
-print('fps : {}'.format(fps))
-output_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-output_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-# try to determine the total number of frames in the video file
-if imutils.is_cv2() is True :
-    prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT
-else : 
-    prop = cv2.CAP_PROP_FRAME_COUNT
-total = int(video.get(prop))
+fps, length, v_width, v_height = get_video_properties(video)
 
 # start from first frame
 currentFrame = 0
 
 # width and height in TrackNet
-width, height = 640, 360
+width, height = 640, 360 # input size of TrackNet
 img, img1, img2 = None, None, None
 
 # load TrackNet model
@@ -72,29 +59,17 @@ m = modelFN(n_classes, input_height=height, input_width=width)
 m.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
 m.load_weights(save_weights_path)
 
-# In order to draw the trajectory of tennis, we need to save the coordinate of previous 7 frames
+# In order to draw the trajectory of tennis, we need to save the coordinate of previous n frames
 q = queue.deque()
-for i in range(0, 8):
+for i in range(0, 16):
     q.appendleft(None)
 
 # save prediction images as videos
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-output_video = cv2.VideoWriter(output_video_path, fourcc, fps, (output_width, output_height))
-
-# load yolov3 labels
-LABELS = open(yolo_classes).read().strip().split("\n")
-# yolo net
-net = cv2.dnn.readNet(yolo_weights, yolo_config)
+output_video = cv2.VideoWriter(output_video_path, fourcc, fps, (v_width, v_height))
 
 # court
 court_detector = CourtDetector()
-
-# players tracker
-dtype = get_dtype()
-detection_model = DetectionModel(dtype=dtype)
-
-# get videos properties
-fps, length, v_width, v_height = get_video_properties(video)
 
 coords = []
 frame_i = 0
@@ -107,12 +82,10 @@ while True:
 
   if ret:
     if frame_i == 1:
-      print('Detecting the court and the players...')
+      print('Detecting the court...')
       lines = court_detector.detect(frame)
     else: # then track it
       lines = court_detector.track_court(frame)
-    detection_model.detect_player_1(frame, court_detector)
-    detection_model.detect_top_persons(frame, court_detector, frame_i)
     
     for i in range(0, len(lines), 4):
       x1, y1, x2, y2 = lines[i],lines[i+1], lines[i+2], lines[i+3]
@@ -124,11 +97,7 @@ while True:
 video.release()
 print('Finished!')
 
-detection_model.find_player_2_box()
-
-# second part 
-player1_boxes = detection_model.player_1_boxes
-player2_boxes = detection_model.player_2_boxes
+# ACABOU A PARTE DA QUADRA E COMECA DA BOLA
 
 video = cv2.VideoCapture(input_video_path)
 frame_i = 0
@@ -136,7 +105,7 @@ frame_i = 0
 last = time.time() # start counting 
 # while (True):
 for img in frames:
-    print('Tracking the ball: {}'.format(round( (currentFrame / total) * 100, 2)))
+    print(f"BALL TRACKING: frame {currentFrame} out of {length} frames.")
     frame_i += 1
 
     # detect the ball
@@ -145,13 +114,13 @@ for img in frames:
     output_img = img
 
     # resize it
-    img = cv2.resize(img, (width, height))
+    img = cv2.resize(img, (width, height)) # for tracknet input size
     # input must be float type
     img = img.astype(np.float32)
 
     # since the odering of TrackNet  is 'channels_first', so we need to change the axis
     X = np.rollaxis(img, 2, 0)
-    # prdict heatmap
+    # predict heatmap
     pr = m.predict(np.array([X]))[0]
 
     # since TrackNet output is ( net_output_height*model_output_width , n_classes )
@@ -162,56 +131,36 @@ for img in frames:
     pr = pr.astype(np.uint8)
 
     # reshape the image size as original input image
-    heatmap = cv2.resize(pr, (output_width, output_height))
+    heatmap = cv2.resize(pr, (v_width, v_height))
 
     # heatmap is converted into a binary image by threshold method.
     ret, heatmap = cv2.threshold(heatmap, 127, 255, cv2.THRESH_BINARY)
 
-    # find the circle in image with 2<=radius<=7
+    # find the circle in image with 2<=radius<=7 (empirical values?)
     circles = cv2.HoughCircles(heatmap, cv2.HOUGH_GRADIENT, dp=1, minDist=1, param1=50, param2=2, minRadius=2,
                               maxRadius=7)
 
-
-    output_img = mark_player_box(output_img, player1_boxes, currentFrame-1)
-    output_img = mark_player_box(output_img, player2_boxes, currentFrame-1)
     
+    #related to PIL library 
     PIL_image = cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB)
     PIL_image = Image.fromarray(PIL_image)
 
-    # check if there have any tennis be detected
+    # check if there have any tennis balls to be detected
     if circles is not None:
-        # if only one tennis be detected
         if len(circles) == 1:
-
-            x = int(circles[0][0][0])
-            y = int(circles[0][0][1])
-
-            coords.append([x,y])
-            t.append(time.time()-last)
-
-            # push x,y to queue
-            q.appendleft([x, y])
-            # pop x,y from queue
-            q.pop()
-
+            x, y = map(int, circles[0][0][:2])
+            coords.append([x, y])
         else:
             coords.append(None)
-            t.append(time.time()-last)
-            # push None to queue
-            q.appendleft(None)
-            # pop x,y from queue
-            q.pop()
-
     else:
         coords.append(None)
-        t.append(time.time()-last)
-        # push None to queue
-        q.appendleft(None)
-        # pop x,y from queue
-        q.pop()
 
-    # draw current frame prediction and previous 7 frames as yellow circle, total: 8 frames
-    for i in range(0, 8):
+    t.append(time.time() - last)
+    q.appendleft(coords[-1])
+    q.pop()
+
+    # draw current frame prediction and previous n frames as yellow circle, total: n+1 frames
+    for i in range(0, 16):
         if q[i] is not None:
             draw_x = q[i][0]
             draw_y = q[i][1]
@@ -232,39 +181,9 @@ for img in frames:
 video.release()
 output_video.release()
 
-if minimap == 1:
-  game_video = cv2.VideoCapture(output_video_path)
 
-  fps1 = int(game_video.get(cv2.CAP_PROP_FPS))
+# A PARTIR DAQUI
 
-  output_width = int(game_video.get(cv2.CAP_PROP_FRAME_WIDTH))
-  output_height = int(game_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-  print('game ', fps1)
-  output_video = cv2.VideoWriter('VideoOutput/video_with_map.mp4', fourcc, fps, (output_width, output_height))
-  
-  print('Adding the mini-map...')
-
-  # Remove Outliers 
-  x, y = diff_xy(coords)
-  remove_outliers(x, y, coords)
-  # Interpolation
-  coords = interpolation(coords)
-  create_top_view(court_detector, detection_model, coords, fps)
-  minimap_video = cv2.VideoCapture('VideoOutput/minimap.mp4')
-  fps2 = int(minimap_video.get(cv2.CAP_PROP_FPS))
-  print('minimap ', fps2)
-  while True:
-    ret, frame = game_video.read()
-    ret2, img = minimap_video.read()
-    if ret:
-      output = merge(frame, img)
-      output_video.write(output)
-    else:
-      break
-  game_video.release()
-  minimap_video.release()
-
-output_video.release()
 
 for _ in range(3):
   x, y = diff_xy(coords)
@@ -301,6 +220,7 @@ if bounce == 1:
   # Predicting Bounces 
   test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
 
+  print(test_df)
   # df.shift
   for i in range(20, 0, -1): 
     test_df[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
@@ -330,6 +250,8 @@ if bounce == 1:
   Vs = from_2d_array_to_nested(Vs.to_numpy())
 
   X = pd.concat([Xs, Ys, Vs], 1)
+
+  print(X)
 
   # load the pre-trained classifier  
   clf = load(open('clf.pkl', 'rb'))

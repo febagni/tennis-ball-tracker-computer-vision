@@ -122,17 +122,17 @@ def diff_xy(coords):
   coords = coords.copy()
   diff_list = []
   for i in range(0, len(coords)-1):
-    if coords[i] is not None and coords[i+1] is not None:
+    if coords[i] is not None and coords[i+1] is not None: # if ball detected in both frames, do the distance
       point1 = coords[i]
       point2 = coords[i+1]
       diff = [abs(point2[0] - point1[0]), abs(point2[1] - point1[1])]
       diff_list.append(diff)
     else:
-      diff_list.append(None)
+      diff_list.append(None) # if ball not detected in both frames, add None to the list
   
   xx, yy = np.array([x[0] if x is not None else np.nan for x in diff_list]), np.array([x[1] if x is not None else np.nan for x in diff_list])
   
-  return xx, yy
+  return xx, yy # diff in x and diff in y
 
 def remove_outliers(x, y, coords):
   ids = set(np.where(x > 50)[0]) & set(np.where(y > 50)[0])

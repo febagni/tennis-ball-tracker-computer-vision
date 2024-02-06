@@ -181,11 +181,12 @@ video.release()
 output_video.release()
 
 
-# A PARTIR DAQUI
-
+# A PARTIR DAQUI - ACABOU A PARTE DA BOLA E COMECA A PARTE DE PREDICAO DE BOUNCE
 
 for _ in range(3):
-  x, y = diff_xy(coords)
+  x, y = diff_xy(coords) # coords sao as coordenadas da bola durante todos os frames 
+  # x e y vao ser a array da diferenca entre as coordenadas da bola em cada frame, para as situacoes em q a bola foi detectada
+  # em dois frames seguidos  
   remove_outliers(x, y, coords)
 
 # interpolation
@@ -198,9 +199,9 @@ V = []
 frames = [*range(len(coords))]
 
 for i in range(len(coords)-1):
-  p1 = coords[i]
+  p1 = coords[i] # coords is the array of the ball's coordinates
   p2 = coords[i+1]
-  t1 = t[i]
+  t1 = t[i] # time array defined way earlier 
   t2 = t[i+1]
   x = (p1[0]-p2[0])/(t1-t2)
   y = (p1[1]-p2[1])/(t1-t2)
@@ -210,13 +211,13 @@ for i in range(len(coords)-1):
 for i in range(len(Vx)):
   vx = Vx[i]
   vy = Vy[i]
-  v = (vx**2+vy**2)**0.5
+  v = (vx**2+vy**2)**0.5 #total velocity magnitude would be the square of both
   V.append(v)
 
 xy = coords[:]
 
 if bounce == 1:
-  # Predicting Bounces 
+  # Predicting Bounces - makes a df with the points the coordinates and the velocity at that frame
   test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
 
   print(test_df)

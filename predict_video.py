@@ -24,14 +24,14 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--input_video_path", type=str)
 parser.add_argument("--output_video_path", type=str, default="")
-parser.add_argument("--minimap", type=int, default=0)
+parser.add_argument("--full_trajectory", type=int, default=0)
 parser.add_argument("--bounce", type=int, default=0)
 
 args = parser.parse_args()
 
 input_video_path = args.input_video_path
 output_video_path = args.output_video_path
-minimap = args.minimap
+full_trajectory = args.full_trajectory
 bounce = args.bounce
 
 n_classes = 256
@@ -52,6 +52,14 @@ currentFrame = 0
 width, height = 640, 360 # input size of TrackNet
 img, img1, img2 = None, None, None
 
+trajectory_n = 16
+if full_trajectory==1:
+   trajectory_n = length - 1
+else:
+   trajectory_n = 16
+#   trajectory_n = length - 1
+   
+
 # load TrackNet model
 modelFN = trackNet
 m = modelFN(n_classes, input_height=height, input_width=width)
@@ -60,7 +68,7 @@ m.load_weights(save_weights_path)
 
 # In order to draw the trajectory of tennis, we need to save the coordinate of previous n frames
 q = queue.deque()
-for i in range(0, 16):
+for i in range(0, trajectory_n):
     q.appendleft(None)
 
 # save prediction images as videos
@@ -159,14 +167,33 @@ for img in frames:
     q.pop()
 
     # draw current frame prediction and previous n frames as yellow circle, total: n+1 frames
-    for i in range(0, 16):
+    draw = ImageDraw.Draw(PIL_image)
+    trajectory_points = []
+
+    for i in range(trajectory_n):
         if q[i] is not None:
-            draw_x = q[i][0]
-            draw_y = q[i][1]
-            bbox = (draw_x - 2, draw_y - 2, draw_x + 2, draw_y + 2)
-            draw = ImageDraw.Draw(PIL_image)
-            draw.ellipse(bbox, outline='yellow')
-            del draw
+            draw_x, draw_y = q[i]
+
+            if full_trajectory == 0:
+                bbox = (draw_x - 2, draw_y - 2, draw_x + 2, draw_y + 2)
+                draw.ellipse(bbox, outline='yellow')
+            else:
+                # if draw_x<1400 or draw_y< 900:
+                    # print(f"X: {draw_x} | Y: {draw_y}")
+                trajectory_points.append((draw_x, draw_y))
+    
+    if full_trajectory == 1 and trajectory_points:
+        outlier_threshold = 100
+        filtered_points = [trajectory_points[0]]
+        for j in range(1, len(trajectory_points)):
+            distance = ((trajectory_points[j][0] - trajectory_points[j-1][0])**2 + (trajectory_points[j][1] - trajectory_points[j-1][1])**2) ** 0.5
+            # print(f"DISTANCE: {distance}")
+            if distance < outlier_threshold:
+                filtered_points.append(trajectory_points[j])
+        draw.line(trajectory_points, fill='yellow', width=2)
+        
+    del draw
+
 
     # Convert PIL image format back to opencv image format
     opencvImage = cv2.cvtColor(np.array(PIL_image), cv2.COLOR_RGB2BGR)
@@ -183,113 +210,113 @@ output_video.release()
 
 # A PARTIR DAQUI - ACABOU A PARTE DA BOLA E COMECA A PARTE DE PREDICAO DE BOUNCE
 
-for _ in range(3):
-  x, y = diff_xy(coords) # coords sao as coordenadas da bola durante todos os frames 
-  # x e y vao ser a array da diferenca entre as coordenadas da bola em cada frame, para as situacoes em q a bola foi detectada
-  # em dois frames seguidos  
-  remove_outliers(x, y, coords)
+# for _ in range(3):
+#   x, y = diff_xy(coords) # coords sao as coordenadas da bola durante todos os frames 
+#   # x e y vao ser a array da diferenca entre as coordenadas da bola em cada frame, para as situacoes em q a bola foi detectada
+#   # em dois frames seguidos  
+#   remove_outliers(x, y, coords)
 
-# interpolation
-coords = interpolation(coords)
+# # interpolation
+# coords = interpolation(coords)
 
-# velocty 
-Vx = []
-Vy = []
-V = []
-frames = [*range(len(coords))]
+# # velocty 
+# Vx = []
+# Vy = []
+# V = []
+# frames = [*range(len(coords))]
 
-for i in range(len(coords)-1):
-  p1 = coords[i] # coords is the array of the ball's coordinates
-  p2 = coords[i+1]
-  t1 = t[i] # time array defined way earlier 
-  t2 = t[i+1]
-  x = (p1[0]-p2[0])/(t1-t2)
-  y = (p1[1]-p2[1])/(t1-t2)
-  Vx.append(x)
-  Vy.append(y)
+# for i in range(len(coords)-1):
+#   p1 = coords[i] # coords is the array of the ball's coordinates
+#   p2 = coords[i+1]
+#   t1 = t[i] # time array defined way earlier 
+#   t2 = t[i+1]
+#   x = (p1[0]-p2[0])/(t1-t2)
+#   y = (p1[1]-p2[1])/(t1-t2)
+#   Vx.append(x)
+#   Vy.append(y)
 
-for i in range(len(Vx)):
-  vx = Vx[i]
-  vy = Vy[i]
-  v = (vx**2+vy**2)**0.5 #total velocity magnitude would be the square of both
-  V.append(v)
+# for i in range(len(Vx)):
+#   vx = Vx[i]
+#   vy = Vy[i]
+#   v = (vx**2+vy**2)**0.5 #total velocity magnitude would be the square of both
+#   V.append(v)
 
-xy = coords[:]
+# xy = coords[:]
 
-if bounce == 1:
-  # Predicting Bounces - makes a df with the points the coordinates and the velocity at that frame
-  test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
+# if bounce == 1:
+#   # Predicting Bounces - makes a df with the points the coordinates and the velocity at that frame
+#   test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
 
-  print(test_df)
-  # df.shift
-  for i in range(20, 0, -1): 
-    test_df[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
-  for i in range(20, 0, -1): 
-    test_df[f'lagY_{i}'] = test_df['y'].shift(i, fill_value=0)
-  for i in range(20, 0, -1): 
-    test_df[f'lagV_{i}'] = test_df['V'].shift(i, fill_value=0)
+#   print(test_df)
+#   # df.shift
+#   for i in range(20, 0, -1): 
+#     test_df[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
+#   for i in range(20, 0, -1): 
+#     test_df[f'lagY_{i}'] = test_df['y'].shift(i, fill_value=0)
+#   for i in range(20, 0, -1): 
+#     test_df[f'lagV_{i}'] = test_df['V'].shift(i, fill_value=0)
 
-  test_df.drop(['x', 'y', 'V'], 1, inplace=True)
+#   test_df.drop(['x', 'y', 'V'], 1, inplace=True)
 
-  Xs = test_df[['lagX_20', 'lagX_19', 'lagX_18', 'lagX_17', 'lagX_16',
-        'lagX_15', 'lagX_14', 'lagX_13', 'lagX_12', 'lagX_11', 'lagX_10',
-        'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
-        'lagX_2', 'lagX_1']]
-  Xs = from_2d_array_to_nested(Xs.to_numpy())
+#   Xs = test_df[['lagX_20', 'lagX_19', 'lagX_18', 'lagX_17', 'lagX_16',
+#         'lagX_15', 'lagX_14', 'lagX_13', 'lagX_12', 'lagX_11', 'lagX_10',
+#         'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
+#         'lagX_2', 'lagX_1']]
+#   Xs = from_2d_array_to_nested(Xs.to_numpy())
 
-  Ys = test_df[['lagY_20', 'lagY_19', 'lagY_18', 'lagY_17',
-        'lagY_16', 'lagY_15', 'lagY_14', 'lagY_13', 'lagY_12', 'lagY_11',
-        'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
-        'lagY_3', 'lagY_2', 'lagY_1']]
-  Ys = from_2d_array_to_nested(Ys.to_numpy())
+#   Ys = test_df[['lagY_20', 'lagY_19', 'lagY_18', 'lagY_17',
+#         'lagY_16', 'lagY_15', 'lagY_14', 'lagY_13', 'lagY_12', 'lagY_11',
+#         'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
+#         'lagY_3', 'lagY_2', 'lagY_1']]
+#   Ys = from_2d_array_to_nested(Ys.to_numpy())
 
-  Vs = test_df[['lagV_20', 'lagV_19', 'lagV_18',
-        'lagV_17', 'lagV_16', 'lagV_15', 'lagV_14', 'lagV_13', 'lagV_12',
-        'lagV_11', 'lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
-        'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
-  Vs = from_2d_array_to_nested(Vs.to_numpy())
+#   Vs = test_df[['lagV_20', 'lagV_19', 'lagV_18',
+#         'lagV_17', 'lagV_16', 'lagV_15', 'lagV_14', 'lagV_13', 'lagV_12',
+#         'lagV_11', 'lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
+#         'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
+#   Vs = from_2d_array_to_nested(Vs.to_numpy())
 
-  X = pd.concat([Xs, Ys, Vs], 1)
+#   X = pd.concat([Xs, Ys, Vs], 1)
 
-  print(X)
+#   print(X)
 
-  # load the pre-trained classifier  
-  clf = load(open('clf.pkl', 'rb'))
+#   # load the pre-trained classifier  
+#   clf = load(open('clf.pkl', 'rb'))
 
-  predcted = clf.predict(X)
-  idx = list(np.where(predcted == 1)[0])
-  idx = np.array(idx) - 10
+#   predcted = clf.predict(X)
+#   idx = list(np.where(predcted == 1)[0])
+#   idx = np.array(idx) - 10
   
-  if minimap == 1:
-    video = cv2.VideoCapture('VideoOutput/video_with_map.mp4')
-  else:
-    video = cv2.VideoCapture(output_video_path)
+#   if minimap == 1:
+#     video = cv2.VideoCapture('VideoOutput/video_with_map.mp4')
+#   else:
+#     video = cv2.VideoCapture(output_video_path)
 
-  output_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-  output_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-  fps = int(video.get(cv2.CAP_PROP_FPS))
-  length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-  fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#   output_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+#   output_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+#   fps = int(video.get(cv2.CAP_PROP_FPS))
+#   length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+#   fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
-  print(fps)
-  print(length)
+#   print(fps)
+#   print(length)
 
-  output_video = cv2.VideoWriter('VideoOutput/final_video.mp4', fourcc, fps, (output_width, output_height))
-  i = 0
-  while True:
-    ret, frame = video.read()
-    if ret:
-      # if coords[i] is not None:
-      if i in idx:
-        center_coordinates = int(xy[i][0]), int(xy[i][1])
-        radius = 3
-        color = (255, 0, 0)
-        thickness = -1
-        cv2.circle(frame, center_coordinates, 10, color, thickness)
-      i += 1
-      output_video.write(frame)
-    else:
-      break
+#   output_video = cv2.VideoWriter('VideoOutput/final_video.mp4', fourcc, fps, (output_width, output_height))
+#   i = 0
+#   while True:
+#     ret, frame = video.read()
+#     if ret:
+#       # if coords[i] is not None:
+#       if i in idx:
+#         center_coordinates = int(xy[i][0]), int(xy[i][1])
+#         radius = 3
+#         color = (255, 0, 0)
+#         thickness = -1
+#         cv2.circle(frame, center_coordinates, 10, color, thickness)
+#       i += 1
+#       output_video.write(frame)
+#     else:
+#       break
 
-  video.release()
-  output_video.release()
+#   video.release()
+#   output_video.release()

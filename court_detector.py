@@ -311,24 +311,9 @@ class CourtDetector:
         """
         self.p = np.array(self.court_reference.get_important_lines(), dtype=np.float32).reshape((-1, 1, 2))
         self.lines = cv2.perspectiveTransform(self.p, self.court_warp_matrix[-1]).reshape(-1)
-        # self.baseline_top = lines[:4]
-        # self.baseline_bottom = lines[4:8]
-        # self.net = lines[8:12]
-        # self.left_court_line = lines[12:16]
-        # self.right_court_line = lines[16:20]
-        # self.left_inner_line = lines[20:24]
-        # self.right_inner_line = lines[24:28]
-        # self.middle_line = lines[28:32]
-        # self.top_inner_line = lines[32:36]
-        # self.bottom_inner_line = lines[36:40]
+
         return self.lines
-        # if self.verbose:
-        #   i = self.frame.copy()
-        #   for line in [baseline_top, baseline_bottom,net, top_inner_line, bottom_inner_line,left_court_line, right_court_line,right_inner_line, left_inner_line, middle_line]:
-        #     cv2.line(i, tuple(line[:2]),tuple(line[2:]), (0,255,0), 5)
-        #   cv2.imwrite('new.png', i)
-        # print(self.verbose)
-            # display_lines_on_frame(self.frame.copy(), [self.baseline_top, self.baseline_bottom,self.net, self.top_inner_line, self.bottom_inner_line],[self.left_court_line, self.right_court_line,self.right_inner_line, self.left_inner_line, self.middle_line])  
+   
 
   def get_warped_court(self):
         """
@@ -337,33 +322,6 @@ class CourtDetector:
         court = cv2.warpPerspective(self.court_reference.court, self.court_warp_matrix[-1], self.frame.shape[1::-1])
         court[court > 0] = 1
         return court
-
-  # def _get_court_accuracy(self, verbose=0):
-  #       """
-  #       Calculate court accuracy after detection
-  #       """
-  #       frame = self.frame.copy()
-  #       gray = self._threshold(frame)
-  #       gray[gray > 0] = 1
-  #       gray = cv2.dilate(gray, np.ones((9, 9), dtype=np.uint8))
-  #       court = self.get_warped_court()
-  #       total_white_pixels = sum(sum(court))
-  #       sub = court.copy()
-  #       sub[gray == 1] = 0
-  #       accuracy = 100 - (sum(sum(sub)) / total_white_pixels) * 100
-  #       if verbose:
-  #           plt.figure()
-  #           plt.subplot(1, 3, 1)
-  #           plt.imshow(gray, cmap='gray')
-  #           plt.title('Grayscale frame'), plt.xticks([]), plt.yticks([])
-  #           plt.subplot(1, 3, 2)
-  #           plt.imshow(court, cmap='gray')
-  #           plt.title('Projected court'), plt.xticks([]), plt.yticks([])
-  #           plt.subplot(1, 3, 3)
-  #           plt.imshow(sub, cmap='gray')
-  #           plt.title('Subtraction result'), plt.xticks([]), plt.yticks([])
-  #           plt.show()
-  #       return accuracy
 
 
   def track_court(self, frame):
@@ -481,28 +439,3 @@ def sort_intersection_points(intersections):
     p12 = sorted(p12, key=lambda x: x[0])
     p34 = sorted(p34, key=lambda x: x[0])
     return p12 + p34
-
-# def display_lines_on_frame(frame, horizontal=(), vertical=()):
-#     """
-#     Display lines on frame for horizontal and vertical lines
-#     """
-
-#     '''cv2.line(frame, (int(len(frame[0]) * 4 / 7), 0), (int(len(frame[0]) * 4 / 7), 719), (255, 255, 0), 2)
-#     cv2.line(frame, (int(len(frame[0]) * 3 / 7), 0), (int(len(frame[0]) * 3 / 7), 719), (255, 255, 0), 2)'''
-#     for line in horizontal:
-#         x1, y1, x2, y2 = line
-#         cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-#         cv2.circle(frame, (x1, y1), 1, (255, 0, 0), 2)
-#         cv2.circle(frame, (x2, y2), 1, (255, 0, 0), 2)
-
-#     for line in vertical:
-#         x1, y1, x2, y2 = line
-#         cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-#         cv2.circle(frame, (x1, y1), 1, (255, 0, 0), 2)
-#         cv2.circle(frame, (x2, y2), 1, (255, 0, 0), 2)
-
-#     cv2.imshow('court', frame)
-#     if cv2.waitKey(0) & 0xff == 27:
-#         cv2.destroyAllWindows()
-#     # cv2.imwrite('../report/t.png', frame)
-#     return frame

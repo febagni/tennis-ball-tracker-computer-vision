@@ -1,38 +1,15 @@
-<p align='center'>
-  <a href="https://www.artlabs.tech"><img src='https://raw.githubusercontent.com/ArtLabss/tennis-tracking/main/VideoOutput/artlabs%20logo.jpg' width="150" height="170"></a>
-</p>
-
 <h1 align='center'>Tennis Tracking 🎾</h1>
-<p align='center'>
-  <img src="https://img.shields.io/github/forks/ArtLabss/tennis-tracking.svg">
-  <img src="https://img.shields.io/github/stars/ArtLabss/tennis-tracking.svg">
-  <img src="https://img.shields.io/github/watchers/ArtLabss/tennis-tracking.svg">
-  
-  <br>
-  
-  <img src="https://img.shields.io/github/last-commit/ArtLabss/tennis-tracking.svg">
-  <img src="https://img.shields.io/badge/license-Unlicense-blue.svg">
-  <img src="https://hits.sh/github.com/ArtLabss/tennis-tracking.svg"/>
-  <br>
-  <code>With ❤️ by ArtLabs</code>
-  
-</p>
-
-<!-- 
-![Forks](https://img.shields.io/github/forks/ArtLabss/tennis-tracking.svg)
-![Stars](https://img.shields.io/github/stars/ArtLabss/tennis-tracking.svg)
-![Watchers](https://img.shields.io/github/watchers/ArtLabss/tennis-tracking.svg)
-![Last Commit](https://img.shields.io/github/last-commit/ArtLabss/tennis-tracking.svg)  
--->
 
 <h3>Objectives</h3>
 <ul>
   <li>Track the ball </li>
   <li>Detect court lines </li>
-  <li>Detect the players</li>
+  <li>Detect the where and when the ball bounce</li>
+  <li>Detect when the ball was hit by a racket</li>
+
 </ul>
 
-<p>To track the ball we used <a href='https://nol.cs.nctu.edu.tw:234/open-source/TrackNet'>TrackNet</a> - deep learning network for tracking high-speed objects. For players detection ResNet50 was used. See <a href="https://artlabs.tech/projects/"> ArtLabs/projects</a> for more or similar projects.</p>
+<p>To track the ball we used <a href='https://nol.cs.nctu.edu.tw:234/open-source/TrackNet'>TrackNet</a> - deep learning network for tracking high-speed objects.
 
 
 <h3>Example using <a href="https://github.com/ArtLabss/tennis-tracking/tree/main/VideoInput">sample videos</a></h3>
@@ -56,7 +33,7 @@ Input            |  Output
   </li>
   
   ```git
-  git clone https://github.com/ArtLabss/tennis-tracking.git
+  git clone https://github.com/febagni/tennis-ball-tracker-computer-vision/
   ```
   
    <li>
@@ -76,7 +53,7 @@ Input            |  Output
   </li>
   
   ```python
-  python3 predict_video.py --input_video_path=VideoInput/video_input3.mp4 --output_video_path=VideoOutput/video_output.mp4 --minimap=0 --bounce=0
+  !python3 predict_video_3.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
   ```
   
   <li>If you are using Google Colab upload all the files to Google Drive, including yolov3 weights from step <strong>2.</strong></li>
@@ -112,61 +89,23 @@ Input            |  Output
   </li>
   
   ```
-   !python3 predict_video.py --input_video_path=VideoInput/video_input3.mp4 --output_video_path=VideoOutput/video_output.mp4 --minimap=0 --bounce=0
+  !python3 predict_video_3.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
   ```
   
-  <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder</a> if <code>--minimap</code> was set <code>0</code>, if <code>--minimap=1</code> three videos will be created: video of the game, video of minimap and a combined video of both</p>
+  <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder</a>.
+
   <p><i>P.S. If you stumble upon an <b>error</b> or have any questions feel free to open a new <a href='https://github.com/ArtLabss/tennis-tracking/issues'>Issue</a> </i></p>
   
 </ol>
 
 
-<h3>What's new?</h3>
+<h3>TO DO LIST</h3>
 <ul>
-  <li>Court line detection improved</li>
-  <li>Player detection improved</li>
-  <li>The algorithm now works practically with any court colors</li>
-  <li>Faster algorithm</li>
-  <li>Dynamic Mini-Map with players and ball added, to activate use argument <code>--minimap</code></li>
-  </ul>
-  
-`--minimap=0`            |  `--minimap=1`
-:-------------------------:|:-------------------------:
-![input_img1](https://github.com/ArtLabss/tennis-tracking/blob/4b5ff2849b71af67023c4160c4f91481a6821bb3/VideoOutput/input6.gif)  |  ![output_img1](https://github.com/ArtLabss/tennis-tracking/blob/3124a8609b30deb557c1563c45febb1fd86c8956/VideoOutput/input3.gif)
-
-<p>
-  To predict bounce points machine learning library for time series <a href="https://www.sktime.org/en/stable/index.html">sktime</a> was used. Specifically, <a href="https://github.com/ArtLabss/tennis-tracking/blob/90652b4547311423ea49c4195dde9da9a81f1893/clf.pkl">TimeSeriesForestClassifier</a> was trained on 3 variables:  <code>x</code>, <code>y</code> coordinates of the ball and <code>V</code> for velocity (<code>V2-V1/t2-t1</code>). Data for training the model - <a href="https://github.com/ArtLabss/tennis-tracking/blob/main/bigDF.csv" >df.csv</a>
-<p>
-<ul>
-  <li>By specifiying <code>--bounce=1</code> bounce points can be detected and displayed</li>
-</ul>
-<p align="center">
-  <kbd>
-  <img width=500 src="https://github.com/ArtLabss/tennis-tracking/blob/a6f395716dc5a076bfb2fc49f97db96a2004efed/VideoOutput/9bounces.gif">
-  </kbd>
-</p>
-
-<p>
-  The model predicts true negatives (not bounce) with accuracy of <strong>98%</strong> and true positives (bounce) with <strong>83%</strong>.
-</p>
-
-
-<h3>Further Developments</h3>
-<ul>
-  <li><strike>Improve line detection of the court and remove overlapping lines</strike></li>
-  <li><strike>Algorithm fails to detect players when the court colors aren't similar to the sample video</strike></li>
-  <li><strike>Don't detect the ballboys/ballgirls</strike></li>
-  <li><strike>Don't contour the banners</strike></li>
-  <li><strike>Find the coordinates of the ball touching the court and display them</strike></li>
-  <li>Code Optimization</li>
-  <li><strike>Dynamic court mini-map with players and the ball</strike></li>
+  <li><strike>Refactor code to improve readability</strike></li>
+  <li>Extract line equations and coords, do IACV process of parallel lines meeting at infinite, to draw upwards view of ball trajectory (detect racket hits)</li>
+  <li>Maybe do the same with lateral view, to better detect bounces</li>
 </ul>
 
-<h3>Current Drawbacks</h3>
-<ul>
-  <li>Slow algorithms (to process 15 seconds video (6.1 Mb) it takes <strike>28 minutes</strike> 16 minutes)<br><ul><li>Instead of writing a new video, a faster way would be to show the frame right after it has been processed</li></ul></li>
-  <li>Algorithm works only on official match videos</li>
-</ul>
  
 <h3>Helpful Repositories</h3>
 <ul>

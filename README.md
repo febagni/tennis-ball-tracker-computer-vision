@@ -53,7 +53,7 @@ Input            |  Output
   </li>
   
   ```python
-  !python3 predict_video_3.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
+  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
   ```
   
   <li>If you are using Google Colab upload all the files to Google Drive, including yolov3 weights from step <strong>2.</strong></li>
@@ -89,7 +89,7 @@ Input            |  Output
   </li>
   
   ```
-  !python3 predict_video_3.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
+  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
   ```
   
   <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder</a>.

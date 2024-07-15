@@ -41,11 +41,55 @@ def setup_output_video(input_video_path, output_video_path, fps, v_width, v_heig
     return output_video
 
 
+def detect_and_rectify_court(video, v_width, v_height):
+    court_detector = CourtDetector()
+    frame_i = 0
+    frames = []
+    src_points = None  # Source points for perspective transformation
+    dst_points = np.float32([[0, 0], [v_width, 0], [v_width, v_height], [0, v_height]])  # Destination points for top-down view
+
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            break
+        frame_i += 1
+        if frame_i == 1:
+            print('Detecting the court...')
+            lines = court_detector.detect(frame)
+            # Define source points for perspective transformation
+            left_top = (lines[0], lines[1])
+            right_top = (lines[2], lines[3])
+            left_bottom = (lines[4], lines[5])
+            right_bottom = (lines[6], lines[7])
+            src_points = np.float32([
+                left_bottom, right_bottom,  # Bottom-left, bottom-right
+                right_top, left_top # Top-right, top-left
+            ])
+        else:
+            lines = court_detector.track_court(frame)
+        
+        # Draw the court lines
+        for i in range(0, len(lines), 4):
+            x1, y1, x2, y2 = lines[i], lines[i + 1], lines[i + 2], lines[i + 3]
+            cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0,0,255), 5)
+        
+        # Apply perspective transformation to get the top-down view
+        if src_points is not None:
+            M = cv2.getPerspectiveTransform(src_points, dst_points)
+            top_down_view = cv2.warpPerspective(frame, M, (v_width, v_height))
+            frames.append(top_down_view)
+        else:
+            new_frame = cv2.resize(frame, (v_width, v_height))
+            frames.append(new_frame)
+    
+    print('Court detection and rectification finished!')
+    return frames
+
+
 def detect_court(video, v_width, v_height):
     court_detector = CourtDetector()
     frame_i = 0
     frames = []
-
     while True:
         ret, frame = video.read()
         if not ret:
@@ -59,8 +103,20 @@ def detect_court(video, v_width, v_height):
         
         for i in range(0, len(lines), 4):
             x1, y1, x2, y2 = lines[i], lines[i + 1], lines[i + 2], lines[i + 3]
-            cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 5)
+            cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0,0,255), 5)
         
+        left_top = (lines[0], lines[1])
+        right_top = (lines[2], lines[3])
+        left_bottom = (lines[4], lines[5])
+        right_bottom = (lines[6], lines[7])
+            
+            # Draw the corners on the frame
+        corners = [left_top, right_top, left_bottom, right_bottom]
+        for idx, point in enumerate(corners):
+                cv2.circle(frame, (int(point[0]), int(point[1])), 5, (0, 0, 255), -1)
+                cv2.putText(frame, str(idx + 1), (int(point[0]), int(point[1]) - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
+
         new_frame = cv2.resize(frame, (v_width, v_height))
         frames.append(new_frame)
     
@@ -74,7 +130,7 @@ def preprocess_image(img, width, height):
     X = np.rollaxis(img, 2, 0)
     return output_img, X
 
-
+ 
 def predict_heatmap(model, X, height, width, n_classes):
     pr = model.predict(np.array([X]))[0]
     pr = pr.reshape((height, width, n_classes)).argmax(axis=2).astype(np.uint8)
@@ -169,7 +225,7 @@ def main():
 
     output_video = setup_output_video(input_video_path, output_video_path, fps, v_width, v_height)
 
-    frames = detect_court(video, v_width, v_height)
+    frames = detect_and_rectify_court(video, v_width, v_height)
     video.release()
 
     video = cv2.VideoCapture(input_video_path)

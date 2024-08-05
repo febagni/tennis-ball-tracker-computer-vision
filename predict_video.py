@@ -211,7 +211,7 @@ def main():
     full_trajectory = args.full_trajectory
 
     n_classes = 256
-    save_weights_path = 'WeightsTracknet/model.1'
+    save_weights_path = 'WeightsTracknet/modelo.h5'
 
     video = cv2.VideoCapture(input_video_path)
     fps, length, v_width, v_height = get_video_properties(video)

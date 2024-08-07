@@ -13,7 +13,7 @@ import time
 
 from court_detector import CourtDetector
 from Models.tracknet import trackNet
-from utils import get_video_properties, get_dtype
+from utils import *
 from detection import *
 
 
@@ -124,6 +124,139 @@ def detect_court(video, v_width, v_height):
     return frames
 
 
+def detect_and_rectify_court_2(video, v_width, v_height):
+    court_detector = CourtDetector()
+    frame_i = 0
+    frames = []
+    src_points = None  # Source points for perspective transformation
+    dst_points = np.float32([[0, 0], [v_width, 0], [v_width, v_height], [0, v_height]])  # Destination points for top-down view
+
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            break
+        frame_i += 1
+        if frame_i == 1:
+            print('Detecting the court...')
+            lines = court_detector.detect(frame)
+            # Define source points for perspective transformation
+            left_top = (lines[0], lines[1])
+            right_top = (lines[2], lines[3])
+            left_bottom = (lines[4], lines[5])
+            right_bottom = (lines[6], lines[7])
+            src_points = np.float32([
+                left_bottom, right_bottom,  # Bottom-left, bottom-right
+                right_top, left_top  # Top-right, top-left
+            ])
+
+            # Extend the lines to ensure the entire court is within the rectified view
+            extend_ratio = 1.8  # Extend the lines by 20%
+            extended_src_points = extend_court_bounds(src_points, extend_ratio)
+        else:
+            lines = court_detector.track_court(frame)
+
+        # Draw the court lines
+        for i in range(0, len(lines), 4):
+            x1, y1, x2, y2 = lines[i], lines[i + 1], lines[i + 2], lines[i + 3]
+            cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0,0,255), 5)
+        
+        # Apply perspective transformation to get the top-down view
+        if src_points is not None:
+            M = cv2.getPerspectiveTransform(extended_src_points, dst_points)
+            top_down_view = cv2.warpPerspective(frame, M, (v_width, v_height))
+            frames.append(top_down_view)
+        else:
+            new_frame = cv2.resize(frame, (v_width, v_height))
+            frames.append(new_frame)
+    
+    print('Court detection and rectification finished!')
+    return frames
+
+
+def extend_court_bounds(points, ratio):
+    """ Extend the boundaries of the court to ensure it fits within the rectified image """
+    center = np.mean(points, axis=0)
+    extended_points = center + (points - center) * ratio
+    return extended_points
+
+
+def compute_vanishing_point(p1, p2):
+    line = np.cross(p1, p2)
+    return line / line[2]
+
+def compute_homography(src_points):
+    # Convert points to homogeneous coordinates
+    pts_h = np.array([[x, y, 1] for x, y in src_points])
+    
+    # Compute lines
+    line1 = np.cross(pts_h[0], pts_h[1])  # line between top-left and top-right
+    line2 = np.cross(pts_h[2], pts_h[3])  # line between bottom-right and bottom-left
+    line3 = np.cross(pts_h[1], pts_h[2])  # line between top-right and bottom-right
+    line4 = np.cross(pts_h[3], pts_h[0])  # line between bottom-left and top-left
+
+    # Compute vanishing points
+    vp1 = np.cross(line1, line2)
+    vp2 = np.cross(line3, line4)
+
+    # Normalize vanishing points
+    vp1 = vp1 / vp1[2]
+    vp2 = vp2 / vp2[2]
+
+    # Compute line at infinity
+    line_at_infinity = np.cross(vp1, vp2)
+    line_at_infinity = line_at_infinity / line_at_infinity[2]
+
+    # Compute affine rectification matrix
+    H_affine = np.array([[1, 0, 0], 
+                         [0, 1, 0], 
+                         [line_at_infinity[0], line_at_infinity[1], 1]])
+    
+    return H_affine
+
+def detect_and_rectify_court_3(video, v_width, v_height):
+    court_detector = CourtDetector()
+    frame_i = 0
+    frames = []
+    src_points = None  # Source points for affine transformation
+    dst_points = np.float32([[0, 0], [v_width, 0], [v_width, v_height], [0, v_height]])  # Destination points for top-down view
+
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            break
+        frame_i += 1
+        if frame_i == 1:
+            print('Detecting the court...')
+            lines = court_detector.detect(frame)
+            # Define source points for affine transformation
+            left_top = (lines[0], lines[1])
+            right_top = (lines[2], lines[3])
+            left_bottom = (lines[4], lines[5])
+            right_bottom = (lines[6], lines[7])
+            src_points = np.float32([
+                left_top, right_top,  # Top-left, top-right
+                right_bottom, left_bottom  # Bottom-right, bottom-left
+            ])
+        else:
+            lines = court_detector.track_court(frame)
+        
+        # Draw the court lines
+        for i in range(0, len(lines), 4):
+            x1, y1, x2, y2 = lines[i], lines[i + 1], lines[i + 2], lines[i + 3]
+            cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 5)
+        
+        # Apply affine transformation to get the top-down view
+        if src_points is not None:
+            H_affine = compute_homography(src_points)
+            rectified_frame = cv2.warpPerspective(frame, H_affine, (v_width, v_height))
+            frames.append(rectified_frame)
+        else:
+            new_frame = cv2.resize(frame, (v_width, v_height))
+            frames.append(new_frame)
+    
+    print('Court detection and rectification finished!')
+    return frames
+
 def preprocess_image(img, width, height):
     output_img = img.copy()
     img = cv2.resize(img, (width, height)).astype(np.float32)
@@ -225,7 +358,7 @@ def main():
 
     output_video = setup_output_video(input_video_path, output_video_path, fps, v_width, v_height)
 
-    frames = detect_and_rectify_court(video, v_width, v_height)
+    frames = detect_and_rectify_court_3(video, v_width, v_height)
     video.release()
 
     video = cv2.VideoCapture(input_video_path)

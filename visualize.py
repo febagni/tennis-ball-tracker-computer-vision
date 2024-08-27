@@ -1,4 +1,5 @@
 import cv2
+import matplotlib.pyplot as plt
 
 # Initialize the coordinate variables
 clicked_coords = None
@@ -185,3 +186,43 @@ def show_specific_frame_and_full_path(video_path, frame_number, coords_x, coords
     out.release()
 
     cv2.destroyAllWindows()
+
+
+def plot_top_down_view(input_video_path, M, frame_position, rect_coords):
+  cap = cv2.VideoCapture(input_video_path)
+
+  # Check if the video file was opened successfully
+  if not cap.isOpened():
+    print("Error opening video file")
+    return
+
+  # Set the desired frame position
+  cap.set(cv2.CAP_PROP_POS_FRAMES, frame_position)
+
+  # Read the frame
+  ret, frame = cap.read()
+
+  # Check if the frame was read successfully
+  if not ret:
+    print("Error reading frame")
+    return
+
+  # Convert frame to RGB (if needed)
+  frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+  # Perform perspective transformation
+  top_down_view = cv2.warpPerspective(frame, M, (1920, 1080))
+
+  # Draw a circle on the rectified image at the specified coordinates
+  cv2.circle(top_down_view, rect_coords, radius=10, color=((0, 255, 255)), thickness=2)
+
+  # Display the not rectified frame and the top-down view side by side
+  fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+  axes[0].imshow(frame)
+  axes[0].axis('off')
+  axes[0].set_title('Not Rectified Frame')
+  axes[1].imshow(top_down_view)
+  axes[1].axis('off')
+  axes[1].set_title('Rectified Frame')
+  plt.tight_layout()
+  plt.show()

@@ -214,7 +214,11 @@ def plot_top_down_view(input_video_path, M, frame_position, rect_coords):
   top_down_view = cv2.warpPerspective(frame, M, (1920, 1080))
 
   # Draw a circle on the rectified image at the specified coordinates
-  cv2.circle(top_down_view, rect_coords, radius=10, color=((0, 255, 255)), thickness=2)
+  cv2.circle(top_down_view, rect_coords, radius=10, color=((0, 255, 255)), thickness=12)
+
+  # Draw a black dot indicating the axis origin
+  cv2.circle(top_down_view, (0, 0), radius=5, color=(0, 0, 0), thickness=25)
+  cv2.putText(top_down_view, "Axis Origin", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 2.3, (0, 0, 0), 2)
 
   # Display the not rectified frame and the top-down view side by side
   fig, axes = plt.subplots(1, 2, figsize=(10, 5))

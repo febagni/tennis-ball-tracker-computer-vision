@@ -153,7 +153,7 @@ def show_specific_frame_and_full_path(video_path, frame_number, coords_x, coords
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('with_peaks.mp4', fourcc, 30.0, (frame.shape[1], frame.shape[0]))
+    out = cv2.VideoWriter('Sources/with_peaks.mp4', fourcc, 30.0, (frame.shape[1], frame.shape[0]))
 
     while True:
         # Plot circles in each frame

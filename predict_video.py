@@ -169,8 +169,6 @@ def create_heatmap(pr, v_width, v_height):
     heatmap = cv2.resize(pr, (v_width, v_height))
     _, heatmap = cv2.threshold(heatmap, 127, 255, cv2.THRESH_BINARY)
     
-    
-    
     # heatmap.shape = #1080,1920
     
     return heatmap

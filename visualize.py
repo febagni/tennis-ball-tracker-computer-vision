@@ -1,5 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Initialize the coordinate variables
 clicked_coords = None
@@ -115,19 +116,15 @@ def show_specific_frame(video_path, frame_number):
 
 
   frame = cv2.resize(frame, (928, 522))
-
-  print(frame.shape)
+  frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
   # Display the frame
-  cv2.imshow("Frame", frame)
-  cv2.waitKey(10000)
-
-  # Release the video capture object
-  cap.release()
-  cv2.destroyAllWindows()
+  plt.imshow(frame)
+  plt.axis('off')
+  plt.show()
 
 
-def show_specific_frame_and_full_path(video_path, frame_number, coords_x, coords_y, peaks):
+def show_specific_frame_and_full_path(video_path, frame_number, coords_x, coords_y, peaks_both, filename):
     """Opens a video and displays a specific frame and plots circles in X and Y axis.
     """
 
@@ -153,14 +150,14 @@ def show_specific_frame_and_full_path(video_path, frame_number, coords_x, coords
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('Sources/with_peaks.mp4', fourcc, 30.0, (frame.shape[1], frame.shape[0]))
+    out = cv2.VideoWriter(f'Sources/{filename}', fourcc, 30.0, (frame.shape[1], frame.shape[0]))
 
     while True:
         # Plot circles in each frame
         for x, y in zip(coords_x, coords_y):
             cv2.circle(frame, (x, y), radius=5, color=(0, 165, 255, 0), thickness=8)
 
-        for x, y in zip(coords_x[peaks], coords_y[peaks]):
+        for x, y in zip(coords_x[peaks_both], coords_y[peaks_both]):
             cv2.circle(frame, (x, y), radius=5, color=(0, 0, 0, 0), thickness=5)
         # Write the frame to the video file
         out.write(frame)
@@ -230,3 +227,184 @@ def plot_top_down_view(input_video_path, M, frame_position, rect_coords):
   axes[1].set_title('Rectified Frame')
   plt.tight_layout()
   plt.show()
+
+
+def video_with_Y(video_path,frame_number, coords_y, peaks_Y, filename):
+    """
+    Opens a video and displays a specific frame with circles plotted on X and Y coordinates,
+    and shows a scatter plot next to the video.
+
+    Args:
+        video_path: Path to the video file.
+        frame_number: The index of the frame to display (starting from 0).
+        coords_x: List of x-coordinates.
+        coords_y: List of y-coordinates.
+        peaks_Y: frames in which a peak in Y coordinate happens.
+        filename: Output filename for saving the video.
+    """
+
+    # Open the video file
+    cap = cv2.VideoCapture(video_path)
+
+    # Check if the video file was opened successfully
+    if not cap.isOpened():
+      print("Error opening video file")
+      return
+
+    # Set the desired frame position
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+
+    # Read the initial frame
+    ret, frame = cap.read()
+    if not ret:
+      print("Error reading frame")
+      return
+
+    # Create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(f'Sources/{filename}', fourcc, 30.0, (frame.shape[1] * 2, frame.shape[0]))
+
+    # Setup the Matplotlib figure
+    plt.ion()  # Enable interactive mode
+    fig, ax = plt.subplots(figsize=(4, 3))
+    scatter_plot, = ax.plot([], [], 'o', color='orange')  # Initial scatter plot settings
+    ax.set_xlim(0, 500)
+    ax.set_ylim(min(coords_y.max()-coords_y) - 10, max(coords_y.max()-coords_y) + 10)
+    ax.set_title('Y Coordinate in time')
+    ax.grid(True)
+
+    while cap.isOpened() and frame_number < 440:
+      # Update scatter plot with current frame coordinates
+      scatter_plot.set_data(list(range(frame_number+1)), coords_y.max() - coords_y[:frame_number + 1])
+
+      # Plot black dot if the frame is in peaks
+      if frame_number in peaks_Y:
+        ax.plot(frame_number, coords_y.max() - coords_y[frame_number], 'ko')
+
+      fig.canvas.draw()
+      fig.canvas.flush_events()
+
+      # Convert Matplotlib figure to a NumPy array image
+      chart_img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+      chart_img = chart_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+      chart_img = cv2.cvtColor(chart_img, cv2.COLOR_RGB2BGR)
+
+      # Resize to match the frame height and stack side by side
+      chart_img_resized = cv2.resize(chart_img, (frame.shape[1], frame.shape[0]))
+      combined_image = np.hstack((frame, chart_img_resized))
+
+      # Write the combined image to the output video
+      out.write(combined_image)
+
+      # Display the combined image
+      cv2.imshow("Video with Scatter Plot", combined_image)
+
+      # Break the loop if 'q' is pressed
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+      # Read the next frame
+      ret, frame = cap.read()
+      frame_number += 1
+
+      # Break the loop if the video has ended
+      if not ret:
+        break
+
+    # Release the video capture and writer objects
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+    plt.ioff()  # Turn off interactive mode
+    plt.close(fig)
+
+
+
+def video_with_coordinates(video_path, frame_number, coords_x, coords_y, peaks, filename):
+  """
+  Opens a video and displays a specific frame with circles plotted on X and Y coordinates,
+  and shows a scatter plot next to the video.
+
+  Args:
+    video_path: Path to the video file.
+    frame_number: The index of the frame to display (starting from 0).
+    coords_x: List of x-coordinates.
+    coords_y: List of y-coordinates.
+    peaks: Indices of peak coordinates.
+    filename: Output filename for saving the video.
+  """
+
+  # Open the video file
+  cap = cv2.VideoCapture(video_path)
+
+  # Check if the video file was opened successfully
+  if not cap.isOpened():
+    print("Error opening video file")
+    return
+
+  # Set the desired frame position
+  cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+
+  # Read the initial frame
+  ret, frame = cap.read()
+  if not ret:
+    print("Error reading frame")
+    return
+
+  # Create VideoWriter object
+  fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+  out = cv2.VideoWriter(f'Sources/{filename}', fourcc, 30.0, (frame.shape[1] * 2, frame.shape[0]))
+
+  # Setup the Matplotlib figure
+  plt.ion()  # Enable interactive mode
+  fig, ax = plt.subplots(figsize=(4, 3))
+  scatter_plot, = ax.plot([], [], 'o', color='orange')  # Initial scatter plot settings
+  ax.set_xlim(min(coords_x) - 10, max(coords_x) + 10)
+  ax.set_ylim(min(coords_y.max()-coords_y) - 10, max(coords_y.max()-coords_y) + 10)
+  ax.set_title('Scatter Plot of Coordinates')
+  ax.grid(True)
+
+  while cap.isOpened():
+    # Update scatter plot with current frame coordinates
+    scatter_plot.set_data(coords_x[:frame_number + 1], coords_y.max() - coords_y[:frame_number + 1])
+
+    # Plot black dot if the frame is in peaks
+    if frame_number in peaks:
+      ax.plot(coords_x[frame_number], coords_y.max() - coords_y[frame_number], 'ko')
+
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+    # Convert Matplotlib figure to a NumPy array image
+    chart_img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    chart_img = chart_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    chart_img = cv2.cvtColor(chart_img, cv2.COLOR_RGB2BGR)
+
+    # Resize to match the frame height and stack side by side
+    chart_img_resized = cv2.resize(chart_img, (frame.shape[1], frame.shape[0]))
+    combined_image = np.hstack((frame, chart_img_resized))
+
+    # Write the combined image to the output video
+    out.write(combined_image)
+
+    # Display the combined image
+    cv2.imshow("Video with Scatter Plot", combined_image)
+
+    # Break the loop if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+      break
+
+    # Read the next frame
+    ret, frame = cap.read()
+    frame_number += 1
+
+    # Break the loop if the video has ended
+    if not ret:
+      break
+
+  # Release the video capture and writer objects
+  cap.release()
+  out.release()
+  cv2.destroyAllWindows()
+  plt.ioff()  # Turn off interactive mode
+  plt.close(fig)

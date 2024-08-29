@@ -1,6 +1,8 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
+import numpy as np
 
 # Initialize the coordinate variables
 clicked_coords = None
@@ -408,3 +410,27 @@ def video_with_coordinates(video_path, frame_number, coords_x, coords_y, peaks, 
   cv2.destroyAllWindows()
   plt.ioff()  # Turn off interactive mode
   plt.close(fig)
+
+
+def plot_dots(image_path, dots):
+  # Read the image
+  image = cv2.imread(image_path)
+
+  # Resize the image
+  image = cv2.resize(image, (1097, 2377))
+
+  # Convert the image to RGB
+  image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+  # Plot the dots on the image
+  for dot in dots:
+    x, y = dot
+    cv2.circle(image, (x, y), radius=20, color=(0, 255, 0), thickness=8)
+
+  # Add a title to the image
+  plt.title("Distribution of Bounces")
+
+  # Display the image
+  plt.imshow(image)
+  plt.axis('off')
+  plt.show()

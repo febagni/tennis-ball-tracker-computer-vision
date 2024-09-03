@@ -1,31 +1,24 @@
-<h1 align='center'>Tennis Tracking 🎾</h1>
+<h1 align='center'>Tennis Tracking 🎾 Image Analysis and Computer Vision project </h1>
 
 <h3>Objectives</h3>
 <ul>
   <li>Track the ball </li>
-  <li>Detect court lines </li>
-  <li>Detect the where and when the ball bounce</li>
-  <li>Detect when the ball was hit by a racket</li>
+  <li>Detect court lines</li>
+  <li>Detect when the ball bounce or is hit by a racket</li>
+  <li>Use the court lines detected to rectify the image and obtain the exact position of these bounces</li>
 
 </ul>
 
 <p>To track the ball we used <a href='https://nol.cs.nctu.edu.tw:234/open-source/TrackNet'>TrackNet</a> - deep learning network for tracking high-speed objects.
 
-
-<h3>Example using <a href="https://github.com/ArtLabss/tennis-tracking/tree/main/VideoInput">sample videos</a></h3>
-
   
 Input            |  Output
 :-------------------------:|:-------------------------:
 ![input_img1](https://github.com/ArtLabss/tennis-tracking/blob/00cfe10b18db1e6a68800921dfbda010f90a74bb/VideoOutput/ezgif.com-gif-maker(3).gif)  |  ![output_img1](https://github.com/ArtLabss/tennis-tracking/blob/0f684fdeef96a715984dc74b62b961f68ff95edc/VideoOutput/ezgif.com-gif-maker.gif)
-![input_img2](https://github.com/ArtLabss/tennis-tracking/blob/579fb3344935bbf4c5d08e27c99ffc6b56bed896/VideoOutput/ezgif.com-gif-maker(1).gif)  |  ![output_img2](https://github.com/ArtLabss/tennis-tracking/blob/579fb3344935bbf4c5d08e27c99ffc6b56bed896/VideoOutput/ezgif.com-gif-maker(2).gif)
-![input_img3](https://github.com/ArtLabss/tennis-tracking/blob/06179bdd29d4424f5e19e5600802f853aaa86f22/VideoOutput/monteCarlo_input.gif)  |  ![output_img3](https://github.com/ArtLabss/tennis-tracking/blob/06179bdd29d4424f5e19e5600802f853aaa86f22/VideoOutput/monteCarlo_output.gif)
 
 <h3>How to run</h3>
 
 <p>This project requires compatible <b>GPU</b> to install tensorflow, you can run it on your local machine in case you have one or use <a href='https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwissLL5-MvxAhXwlYsKHbkBDEUQFnoECAMQAw&url=https%3A%2F%2Fcolab.research.google.com%2Fnotebooks%2F&usg=AOvVaw0eDNVclINNdlOuD-YTYiiB'>Google Colaboratory</a> with <b>Runtime Type</b> changed to <b>GPU</b>.</p>
-
-- [ ] Input videos have to be rallies of the game and shouldn't contain any <strong>commercials, breaks or spectators</strong>.
   
 <ol>
   <li>
@@ -53,7 +46,7 @@ Input            |  Output
   </li>
   
   ```python
-  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
+  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1 --rectify=1
   ```
   
   <li>If you are using Google Colab upload all the files to Google Drive, including yolov3 weights from step <strong>2.</strong></li>
@@ -89,39 +82,9 @@ Input            |  Output
   </li>
   
   ```
-  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1
+  !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1 --rectify=1
   ```
   
   <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder</a>.
-
-  <p><i>P.S. If you stumble upon an <b>error</b> or have any questions feel free to open a new <a href='https://github.com/ArtLabss/tennis-tracking/issues'>Issue</a> </i></p>
   
 </ol>
-
-
-<h3>TO DO LIST</h3>
-<ul>
-  <li><strike>Refactor code to improve readability</strike></li>
-  <li>Extract line equations and coords, do IACV process of parallel lines meeting at infinite, to draw upwards view of ball trajectory (detect racket hits)</li>
-  <li>Maybe do the same with lateral view, to better detect bounces</li>
-</ul>
-
- 
-<h3>Helpful Repositories</h3>
-<ul>
-  <li><a href="https://github.com/MaximeBataille/tennis_tracking">Tennis Tracking</a> @MaximeBataille</li>
-  <li><a href="https://github.com/avivcaspi/TennisProject">Tennis Project</a> @avivcaspi</li>
-  <li><a href="https://nol.cs.nctu.edu.tw:234/open-source/TrackNet/tree/master/Code_Python3">TrackNet</a></li>
-</ul>
-
-<h3>Contribution</h3>
-
-<p>Help us by contributing, check out the <a href="https://github.com/ArtLabss/tennis-tracking/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>. Contributing is easy!</p>
-
-<h3>References</h3>
-
-- Yu-Chuan Huang, "TrackNet: Tennis Ball Tracking from Broadcast Video by Deep Learning Networks," Master Thesis, advised by Tsì-Uí İk and Guan-Hua Huang, National Chiao Tung University, Taiwan, April 2018. 
-
-- Yu-Chuan Huang, I-No Liao, Ching-Hsuan Chen, Tsì-Uí İk, and Wen-Chih Peng, "TrackNet: A Deep Learning Network for Tracking High-speed and Tiny Objects in Sports Applications," in the IEEE International Workshop of Content-Aware Video Analysis (CAVA 2019) in conjunction with the 16th IEEE International Conference on Advanced Video and Signal-based Surveillance (AVSS 2019), 18-21 September 2019, Taipei, Taiwan.
-
-- Joseph Redmon, Ali Farhadi, "YOLOv3: An Incremental Improvement", University of Washington, https://arxiv.org/pdf/1804.02767.pdf

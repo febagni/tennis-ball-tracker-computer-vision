@@ -1,4 +1,6 @@
-<h1 align='center'>Tennis Tracking 🎾 Image Analysis and Computer Vision project </h1>
+<h1 align='center'>Tennis Tracking 🎾</h1>
+
+<h1 align='center'> Image Analysis and Computer Vision project </h1>
 
 <h3>Objectives</h3>
 <ul>

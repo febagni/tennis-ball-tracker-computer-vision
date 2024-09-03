@@ -87,6 +87,6 @@ Input            |  Output
   !python3 predict_video.py --input_video_path=VideoInput/INPUT_play_5.mp4 --output_video_path=VideoOutput/output.mp4 --full_trajectory=1 --rectify=1
   ```
   
-  <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder</a>.
+  <p>After the compilation is completed, a new video will be created in <a href="/VideoOutput" target="_blank">VideoOutput folder in which shows the trajectory being detected by the ball. We are not interested completely in this video, instead. We need are using the coordinates of the tracked ball during the frames and the detected court lines to obtain the occurence of bounces and their respective location. As explained in detail on the report</a>.
   
 </ol>

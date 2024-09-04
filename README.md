@@ -16,7 +16,8 @@
   
 Input            |  Output
 :-------------------------:|:-------------------------:
-![input_img1](https://github.com/ArtLabss/tennis-tracking/blob/00cfe10b18db1e6a68800921dfbda010f90a74bb/VideoOutput/ezgif.com-gif-maker(3).gif)  |  ![output_img1](https://github.com/ArtLabss/tennis-tracking/blob/0f684fdeef96a715984dc74b62b961f68ff95edc/VideoOutput/ezgif.com-gif-maker.gif)
+![input_img1](https://github.com/febagni/tennis-ball-tracker-computer-vision/blob/main/Gifs/Y_coordinate_video-ezgif.com-video-to-gif-converter.gif)
+
 
 <h3>How to run</h3>
 

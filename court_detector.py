@@ -99,20 +99,6 @@ class CourtDetector:
         gray[i, j] = 0
     return gray
 
-  def _filter_pixels(self, gray):
-    """
-    Filter pixels by using the court line structure
-    """
-    for i in range(self.dist_tau, len(gray) - self.dist_tau):
-      for j in range(self.dist_tau, len(gray[0]) - self.dist_tau):
-        if gray[i, j] == 0:
-          continue
-        if (gray[i, j] - gray[i + self.dist_tau, j] > self.intensity_threshold and gray[i, j] - gray[i - self.dist_tau, j] > self.intensity_threshold):
-          continue
-        if (gray[i, j] - gray[i, j + self.dist_tau] > self.intensity_threshold and gray[i, j] - gray[i, j - self.dist_tau] > self.intensity_threshold):
-          continue
-        gray[i, j] = 0
-    return gray
 
   def _detect_lines(self, gray):
         """

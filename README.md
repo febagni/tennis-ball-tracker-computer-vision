@@ -14,8 +14,8 @@
 <p>To track the ball we used <a href='https://nol.cs.nctu.edu.tw:234/open-source/TrackNet'>TrackNet</a> - deep learning network for tracking high-speed objects.
 
   
-Input            |  Output
-:-------------------------:|:-------------------------:
+**Output video**
+:-------------------------:
 ![input_img1](https://github.com/febagni/tennis-ball-tracker-computer-vision/blob/main/Gifs/Y_coordinate_video-ezgif.com-video-to-gif-converter.gif)
 
 
